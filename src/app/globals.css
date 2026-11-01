@@ -1,0 +1,134 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  --canvas-bg: #f8fafc;
+  --surface-card: #ffffff;
+  --primary-blue: #2563eb;
+  --deep-blue: #1e3a8a;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-light: #e2e8f0;
+}
+
+.dark {
+  --canvas-bg: #0b1120;
+  --surface-card: #111827;
+  --primary-blue: #3b82f6;
+  --deep-blue: #1e3a8a;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-light: #1f2937;
+}
+
+body {
+  color: var(--text-main);
+  background: var(--canvas-bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Hide print portal on regular screen display */
+#thermal-print-portal {
+  display: none;
+}
+
+/* Print styles for A6 (105mm x 148mm) thermal receipt / package labels (2 resi in 1 paper) */
+@media print {
+  @page {
+    size: 105mm 148mm portrait;
+    margin: 0mm !important;
+  }
+  
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 105mm !important;
+    max-width: 105mm !important;
+    height: 148mm !important;
+    max-height: 148mm !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-before: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Completely remove the normal application DOM tree from print layout */
+  body > *:not(#thermal-print-portal) {
+    display: none !important;
+  }
+
+  /* Strict single-page A6 thermal print portal attached directly to body */
+  #thermal-print-portal {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 105mm !important;
+    max-width: 105mm !important;
+    height: 146mm !important;
+    max-height: 146mm !important;
+    margin: 0 !important;
+    padding: 2mm 3mm !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: hidden !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-before: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Fallback if print-area is rendered inside modal */
+  .print-area {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: hidden !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
