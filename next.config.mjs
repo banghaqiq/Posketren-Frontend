@@ -70,15 +70,15 @@ const nextConfig = {
   },
 
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: process.env.BACKEND_URL
-          ? `${process.env.BACKEND_URL}/api/:path*`
-          : 'http://127.0.0.1:8080/api/:path*',
-      },
-    ];
-  },
+  return [
+    {
+      source: '/api/:path*',
+      destination: process.env.BACKEND_URL
+        ? `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/:path*`
+        : 'http://127.0.0.1:8080/api/:path*',
+    },
+  ];
+},
 };
 
 export default nextConfig;

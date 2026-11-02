@@ -10,9 +10,7 @@ import {
 } from '../types';
 
 const api = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL?.startsWith('http')
-  ? process.env.NEXT_PUBLIC_API_URL
-  : `https://${process.env.NEXT_PUBLIC_API_URL}`}/api`,
+  baseURL: '/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
