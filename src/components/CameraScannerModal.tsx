@@ -209,6 +209,8 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
 
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Mencegah callback onScanSuccess dipanggil berulang kali karena kamera dapat memicu beberapa deteksi dalam waktu singkat
+  const scanHandledRef = useRef(false);
 
   // Stop camera helper
   const stopScanner = useCallback(async () => {
@@ -228,6 +230,8 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   const startCamera = useCallback(
     async (cameraId?: string) => {
       await stopScanner();
+      // Reset Pengunci hanya saat memulai sesi scanner baru
+      scanHandledRef.current = false;
       setCameraError(null);
       setIsScanning(true);
       setScannedResult(null);
@@ -306,18 +310,48 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           },
         };
 
-        const onScanSuccess = (decodedText: string) => {
-          playScanBeep();
-          const cleanResi = extractCleanTrackingNumber(decodedText);
-          setScannedResult(cleanResi);
+        // const onScanSuccess = (decodedText: string) => {
+        //   playScanBeep();
+        //   const cleanResi = extractCleanTrackingNumber(decodedText);
+        //   setScannedResult(cleanResi);
 
-          // Stop scanner and notify parent
-          stopScanner().finally(() => {
-            setTimeout(() => {
-              onScan(cleanResi);
-              onClose();
-            }, 300);
-          });
+        //   // Stop scanner and notify parent
+        //   stopScanner().finally(() => {
+        //     setTimeout(() => {
+        //       onScan(cleanResi);
+        //       onClose();
+        //     }, 300);
+        //   });
+        // };
+
+        const onScanSuccess = async (decodedText: string) => {
+          // Jika barcode sudah sedang diproses, abaikan callback berikutnya
+          if (scanHandledRef.current) return;
+
+          const cleanResi = extractCleanTrackingNumber(decodedText);
+
+          // Abaikan hasil scan yang kosong
+          if (!cleanResi) return;
+
+          // Kunci langsung sebelum proses asynchronous dimulai
+          scanHandledRef.current = true;
+
+          setScannedResult(cleanResi);
+          playScanBeep();
+
+          try {
+            // Hentikan kamera agar tidak terus membaca barcode
+            await stopScanner();
+
+            // Beri waktu untuk menampilkan animasi sukses
+            await new Promise((resolve) => setTimeout(resolve, 300));
+
+            // Panggil callback parent tepat satu kali
+            onScan(cleanResi);
+            onClose();
+          } catch (error) {
+            console.error('Scan processing error:', error);
+          }
         };
 
         // Camera constraints: High-definition for sharp barcode bars
@@ -350,10 +384,29 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
     [onScan, onClose, stopScanner, selectedCameraId]
   );
 
+  // useEffect(() => {
+  //   let timeoutId: NodeJS.Timeout | null = null;
+  //   if (isOpen) {
+  //     // Delay ensures the modal DOM is rendered and measured before starting camera
+  //     timeoutId = setTimeout(() => {
+  //       startCamera(selectedCameraId || undefined);
+  //     }, 150);
+  //   } else {
+  //     stopScanner();
+  //   }
+
+  //   return () => {
+  //     if (timeoutId) clearTimeout(timeoutId);
+  //     stopScanner();
+  //   };
+  // }, [isOpen, selectedCameraId]);
+
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     if (isOpen) {
-      // Delay ensures the modal DOM is rendered and measured before starting camera
+      scanHandledRef.current = false;
+
       timeoutId = setTimeout(() => {
         startCamera(selectedCameraId || undefined);
       }, 150);
@@ -365,7 +418,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
       if (timeoutId) clearTimeout(timeoutId);
       stopScanner();
     };
-  }, [isOpen, selectedCameraId]);
+  }, [isOpen, selectedCameraId, startCamera, stopScanner]);
 
   // Toggle Torch / Flashlight
   const handleToggleTorch = async () => {
@@ -384,7 +437,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   // Switch camera
   const handleSwitchCamera = (cameraId: string) => {
     setSelectedCameraId(cameraId);
-    startCamera(cameraId);
+    // startCamera(cameraId);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

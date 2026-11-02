@@ -72,6 +72,7 @@ export const PackageValidationView: React.FC<PackageValidationViewProps> = ({
   // Input refs for direct camera vs gallery upload
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const lastScannedRef = useRef<string | null>(null);
 
   const { showToast } = useToast();
 
@@ -164,20 +165,65 @@ export const PackageValidationView: React.FC<PackageValidationViewProps> = ({
     }
   };
 
+  // const handleScanResi = (scannedResi: string) => {
+  //   setSearchQuery(scannedResi);
+  //   packagesApi.getAll({ search: scannedResi }).then((results) => {
+  //     // Filter out already delivered
+  //     const available = results.filter(
+  //       (p) => p.status !== 'telah_diantarkan' && p.status !== 'telah_diterima' && p.status !== 'disita' && p.status !== 'dikembalikan'
+  //     );
+  //     setPackages(available);
+  //     if (available.length > 0) {
+  //       handleSelectPackage(available[0]);
+  //       showToast(`Paket ditemukan: ${available[0].id} (Acuan: ${available[0].trackingNumber})`, 'success');
+  //     } else {
+  //       showToast(`Paket '${scannedResi}' tidak ditemukan dalam antrian serah terima`, 'warning');
+  //     }
+  //   });
+  // };
+
   const handleScanResi = (scannedResi: string) => {
-    setSearchQuery(scannedResi);
-    packagesApi.getAll({ search: scannedResi }).then((results) => {
-      // Filter out already delivered
+  if (!scannedResi) return;
+
+  // Hindari pencarian berulang untuk resi yang sama
+  if (lastScannedRef.current === scannedResi) return;
+
+  lastScannedRef.current = scannedResi;
+  setSearchQuery(scannedResi);
+
+  packagesApi.getAll({ search: scannedResi })
+    .then((results) => {
       const available = results.filter(
-        (p) => p.status !== 'telah_diantarkan' && p.status !== 'telah_diterima' && p.status !== 'disita' && p.status !== 'dikembalikan'
+        (p) =>
+          p.status !== 'telah_diantarkan' &&
+          p.status !== 'telah_diterima' &&
+          p.status !== 'disita' &&
+          p.status !== 'dikembalikan'
       );
+
       setPackages(available);
+
       if (available.length > 0) {
         handleSelectPackage(available[0]);
-        showToast(`Paket ditemukan: ${available[0].id} (Acuan: ${available[0].trackingNumber})`, 'success');
+
+        showToast(
+          `Paket ditemukan: ${available[0].id} (Acuan: ${available[0].trackingNumber})`,
+          'success'
+        );
       } else {
-        showToast(`Paket '${scannedResi}' tidak ditemukan dalam antrian serah terima`, 'warning');
+        showToast(
+          `Paket '${scannedResi}' tidak ditemukan dalam antrian serah terima`,
+          'warning'
+        );
       }
+    })
+    .catch((error) => {
+      console.error('Gagal mencari paket hasil scan:', error);
+
+      // Izinkan mencoba kembali jika request gagal
+      lastScannedRef.current = null;
+
+      showToast('Gagal mencari paket. Silakan coba kembali.', 'error');
     });
   };
 
