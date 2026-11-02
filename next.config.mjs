@@ -69,15 +69,13 @@ const nextConfig = {
     ];
   },
 
-   async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: '/api/:path*',
-          destination: `${process.env.BACKEND_URL}/api/:path*`,
-        },
-      ],
-    };
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${(process.env.BACKEND_URL || 'https://poskettren-backend-production.up.railway.app').replace(/\/$/, '')}/api/:path*`,
+      },
+    ];
   },
 };
 
