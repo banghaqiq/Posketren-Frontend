@@ -212,20 +212,39 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   // Mencegah callback onScanSuccess dipanggil berulang kali karena kamera dapat memicu beberapa deteksi dalam waktu singkat
   const scanHandledRef = useRef(false);
   const selectedCameraIdRef = useRef<string>('');
+  // Refs untuk menyimpan callback agar tidak perlu menambahkan onScan/onClose ke dependency useEffect
+  const onScanRef = useRef(onScan);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onCloseRef.current = onClose;
+  }, [onScan, onClose]);
 
   // Stop camera helper
   const stopScanner = useCallback(async () => {
-    if (scannerRef.current) {
-      try {
-        if (scannerRef.current.isScanning) {
-          await scannerRef.current.stop();
-        }
-      } catch (e) {
-        // Ignored
+    const scanner = scannerRef.current;
+
+    if (!scanner) return;
+
+    scannerRef.current = null;
+
+    try {
+      if (scanner.isScanning) {
+        await scanner.stop();
       }
-      scannerRef.current = null;
+    } catch (error) {
+      console.warn('Gagal menghentikan scanner:', error);
     }
+
+    try {
+      await scanner.clear();
+    } catch (error) {
+      console.warn('Gagal membersihkan scanner:', error);
+    }
+
   }, []);
+
 
   // Initialize and start camera
   const startCamera = useCallback(
@@ -350,8 +369,8 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
             await new Promise((resolve) => setTimeout(resolve, 300));
 
             // Panggil callback parent tepat satu kali
-            onScan(cleanResi);
-            onClose();
+            onScanRef.current(cleanResi);
+            onCloseRef.current();
           } catch (error) {
             console.error('Scan processing error:', error);
           }
@@ -390,7 +409,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           setIsScanning(false);
         }
       },
-    [onScan, onClose, stopScanner]
+    [stopScanner]
   );
 
   // useEffect(() => {

@@ -36,6 +36,8 @@ export const ConfiscatedView: React.FC<ConfiscatedViewProps> = ({ currentUser })
 
   // Form states for new confiscation
   const [targetPackageId, setTargetPackageId] = useState('');
+  const [targetPackage, setTargetPackage] = useState<PackageItem | null>(null);
+  const [isSearchingPackage, setIsSearchingPackage] = useState(false);
   const [confiscatedReason, setConfiscatedReason] = useState('Elektronik Terlarang');
   const [confiscatedNotes, setConfiscatedNotes] = useState('');
   const [evidencePhoto, setEvidencePhoto] = useState<string | null>(null);
@@ -85,14 +87,56 @@ export const ConfiscatedView: React.FC<ConfiscatedViewProps> = ({ currentUser })
     }
   };
 
-  const handleScanInModal = (scannedResi: string) => {
+  const handleFindTargetPackage = async (identifier: string) => {
+    const searchValue = identifier.trim();
+
+    if (!searchValue) {
+      setTargetPackage(null);
+      return;
+    }
+
+    setIsSearchingPackage(true);
+    setTargetPackage(null);
+
+    try {
+      const pkg = await packagesApi.getOne(searchValue);
+
+      if (pkg.status === 'disita') {
+        showToast(
+          'Paket ini sudah tercatat sebagai barang sitaan',
+          'error',
+        );
+        setTargetPackageId(pkg.id);
+        return;
+      }
+
+      setTargetPackage(pkg);
+      setTargetPackageId(pkg.id);
+
+      showToast('Data paket berhasil ditemukan', 'success');
+
+    } catch (err: any) {
+      setTargetPackage(null);
+
+      showToast(
+        err.response?.data?.message ||
+          'Paket dengan ID atau nomor resi tersebut tidak ditemukan',
+        'error',
+      );
+    } finally {
+      setIsSearchingPackage(false);
+    }
+  };
+
+  const handleScanInModal = async (scannedResi: string) => {
     setTargetPackageId(scannedResi);
-    showToast(`Resi / ID terdeteksi: ${scannedResi}`, 'success');
+
+    await handleFindTargetPackage(scannedResi);
   };
 
   const handleSaveConfiscation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!targetPackageId.trim()) {
+    if (!targetPackage) {
       showToast('Pilih atau ketik ID/Resi paket yang disita', 'error');
       return;
     }
@@ -100,7 +144,7 @@ export const ConfiscatedView: React.FC<ConfiscatedViewProps> = ({ currentUser })
     setLoading(true);
     try {
       const now = new Date().toISOString().slice(0, 10);
-      const updated = await packagesApi.update(targetPackageId.trim(), {
+      const updated = await packagesApi.update(targetPackage.id, {
         status: 'disita',
         confiscatedReason,
         confiscatedNotes: confiscatedNotes.trim(),
@@ -415,15 +459,59 @@ export const ConfiscatedView: React.FC<ConfiscatedViewProps> = ({ currentUser })
                     Scan Barcode Resi
                   </button>
                 </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="Scan atau ketik ID paket / nomor resi..."
-                  value={targetPackageId}
-                  onChange={(e) => setTargetPackageId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Scan atau ketik ID paket / nomor resi..."
+                    value={targetPackageId}
+                    onChange={(e) => {
+                      setTargetPackageId(e.target.value);
+                      setTargetPackage(null);
+                    }}
+                    className="flex-1 min-w-0 px-3.5 py-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={isSearchingPackage || !targetPackageId.trim()}
+                    onClick={() => handleFindTargetPackage(targetPackageId)}
+                    className="px-3 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl disabled:opacity-50"
+                  >
+                    {isSearchingPackage ? 'Mencari...' : 'Cari'}
+                  </button>
+                </div>
               </div>
+
+              {targetPackage && (
+                <div className="mt-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800">
+                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs font-bold mb-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Paket ditemukan dalam database
+                  </div>
+
+                  <div className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
+                    <p>
+                      <strong>Nomor Resi:</strong> {targetPackage.trackingNumber || '-'}
+                    </p>
+                    <p>
+                      <strong>ID Paket:</strong> {targetPackage.id}
+                    </p>
+                    <p>
+                      <strong>Nama Penerima:</strong> {targetPackage.recipientName || '-'}
+                    </p>
+                    <p>
+                      <strong>Wilayah:</strong> {targetPackage.wilayah || '-'}
+                    </p>
+                    <p>
+                      <strong>Asrama:</strong> {targetPackage.asrama || '-'}
+                    </p>
+                    <p>
+                      <strong>Status Saat Ini:</strong> {targetPackage.status}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">
