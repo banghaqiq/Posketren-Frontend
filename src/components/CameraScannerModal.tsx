@@ -211,6 +211,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Mencegah callback onScanSuccess dipanggil berulang kali karena kamera dapat memicu beberapa deteksi dalam waktu singkat
   const scanHandledRef = useRef(false);
+  const selectedCameraIdRef = useRef<string>('');
 
   // Stop camera helper
   const stopScanner = useCallback(async () => {
@@ -244,7 +245,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           const devices = await Html5Qrcode.getCameras();
           if (devices && devices.length > 0) {
             setCameras(devices.map((d) => ({ id: d.id, label: d.label || `Kamera ${d.id}` })));
-            if (!cameraId && !selectedCameraId) {
+            if (!cameraId && !selectedCameraIdRef.current) {
               // Prefer back camera if found in labels
               const backCam = devices.find(
                 (d) =>
@@ -254,9 +255,11 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
               );
               if (backCam) {
                 setSelectedCameraId(backCam.id);
+                selectedCameraIdRef.current = backCam.id;
                 cameraId = backCam.id;
               } else {
                 setSelectedCameraId(devices[0].id);
+                selectedCameraIdRef.current = devices[0].id;
                 cameraId = devices[0].id;
               }
             }
@@ -375,13 +378,19 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           // Torch check not supported
         }
       } catch (err: any) {
-        console.warn('Camera stream error:', err);
-        setCameraError(
-          'Kamera tidak dapat diakses atau izin belum diberikan. Anda dapat mengganti pilihan kamera, mengunggah foto resi paket, atau mengetikkan nomor resi kurir di bawah.'
-        );
-      }
-    },
-    [onScan, onClose, stopScanner, selectedCameraId]
+          console.error('Camera stream error:', err);
+
+          const errorName = err?.name || 'UnknownError';
+          const errorMessage = err?.message || 'Tidak ada detail error';
+
+          setCameraError(
+            `Kamera gagal dijalankan (${errorName}): ${errorMessage}. Pastikan izin kamera diberikan pada browser, kamera tidak digunakan aplikasi lain, dan halaman dibuka melalui HTTPS. Kamu juga dapat mengunggah foto resi atau memasukkan nomor resi secara manual.`
+          );
+
+          setIsScanning(false);
+        }
+      },
+    [onScan, onClose, stopScanner]
   );
 
   // useEffect(() => {
@@ -408,8 +417,8 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
       scanHandledRef.current = false;
 
       timeoutId = setTimeout(() => {
-        startCamera(selectedCameraId || undefined);
-      }, 150);
+        startCamera();
+      }, 300);
     } else {
       stopScanner();
     }
@@ -418,7 +427,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
       if (timeoutId) clearTimeout(timeoutId);
       stopScanner();
     };
-  }, [isOpen, selectedCameraId, startCamera, stopScanner]);
+  }, [isOpen, startCamera, stopScanner]); 
 
   // Toggle Torch / Flashlight
   const handleToggleTorch = async () => {
@@ -435,9 +444,13 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   };
 
   // Switch camera
-  const handleSwitchCamera = (cameraId: string) => {
+  const handleSwitchCamera = async (cameraId: string) => {
+    selectedCameraIdRef.current = cameraId;
     setSelectedCameraId(cameraId);
-    // startCamera(cameraId);
+    setIsTorchOn(false);
+
+    await stopScanner();
+    await startCamera(cameraId);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
