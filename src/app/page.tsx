@@ -63,6 +63,7 @@ const ROLE_ALLOWED_TABS: Record<string, string[]> = {
   ],
   keamanan: [
     'dashboard',
+    'validation',
     'confiscated',
     'rts',
     'manifest',
@@ -384,7 +385,7 @@ function MainApp() {
             ))}
 
           {activeTab === 'validation' &&
-            (['admin', 'petugaspos'].includes(currentUser.role) ? (
+            (['admin', 'petugaspos', 'keamanan'].includes(currentUser.role) ? (
               <PackageValidationView currentUser={currentUser} />
             ) : (
               <AccessDeniedView tabName="Validasi & Penyerahan Paket" />
