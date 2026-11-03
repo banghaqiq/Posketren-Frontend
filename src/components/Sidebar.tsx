@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'manifest',
       label: 'Manifest Ekspedisi',
       icon: FileSpreadsheet,
-      roles: ['admin', 'petugaspos'],
+      roles: ['admin', 'petugaspos', 'keamanan'],
       category: 'Database & Master',
     },
     {
