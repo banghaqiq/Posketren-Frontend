@@ -19,6 +19,164 @@ import { studentsApi, configApi } from '../../lib/api';
 import { Student } from '../../types';
 import { useToast } from '../Toast';
 
+const DAFTAR_WILAYAH = [
+  {
+    label: 'Syekh Jumadil Kubro',
+    value: 'Wilayah Syekh Jumadil Kubro (01)',
+    daerah: [
+      'Sunan Gunung Jati (A)',
+      'Sunan Kalijaga (G)',
+      'Sunan Kudus (J)',
+      'Sunan Ampel (B)',
+      'Sunan Drajat (C)',
+      'Sunan Bonang (P)',
+      'Sunan Giri (M)',
+      'Nawawi Al-Bantani (D)',
+      'Abu Hasan Asy-Syadzili (S)',
+      "Abul Aswad Ad-Du'ali (N)",
+      'Yasin Al-Fadani (Q)',
+      'Ibnu Arabi (E)',
+      "Sa'id Al-Makki Al-Manduri (R)",
+      'Raden Fatah (O)',
+      'KH. Zaini Mun’im (K)',
+      'Nurus Shobah (H)',
+      'Sunan Muria (L)',
+      'Faza (I)',
+      'Imam Al-Ghazali (F)',
+    ],
+  },
+  {
+    label: 'Az-Zainiyah',
+    value: 'Wilayah Az-Zainiyah (02)',
+    daerah: [
+      'Sayyidah Hafshah (A)',
+      'Robiatul Adawiyah (B)',
+      'Aminatuz Zuhriyah (C)',
+      'Sayyidah Aisyah (D)',
+      'Tsuwaibah Al-Aslamiyah (E)',
+      'Khodijah Al-Kubro (F)',
+      'Sayyidah Zainab (G)',
+      'Sayyidah Sarah (H)',
+      'Dewi Masyithah (I)',
+      'Sayyidah Maryam (J)',
+      "Halimatus Sa'diyah (K)",
+      'Sayyidah Ummu Salamah (L)',
+      "Sayyidah Fatimah Az-Zahro' (M)",
+      "An-Nafi'iyah (N)",
+      "Sayyidah Asma' (O)",
+      'Daerah Khusus (P)',
+      'Daerah Pengabdi (Q)',
+      'Daerah Temporary',
+    ],
+  },
+  {
+    label: 'Al-Hasyimiyah',
+    value: 'Wilayah Al-Hasyimiyah (03)',
+    daerah: [
+      'Riyadlul Jinan (A)',
+      'El-Farodies (B)',
+      'An-Nuriyah (C)',
+      'An-Najwa (D)',
+      'Zahroil Batul (E)',
+      'Laila United (F)',
+      'Al-Maziyah (G)',
+      'Ash-Shofwah (H)',
+      'Al-Masruriyah (I)',
+      'Rumaisha Al-Milhany (J)',
+      'Al-Munawwaroh (K)',
+      'Fikrotun Najibah (L)',
+      'Al-Hamidiyah (M)',
+      'Daerah Khusus (N)',
+      'Abidah Ardelia (Temporary)',
+      'Daerah Diniyah (O)',
+    ],
+  },
+  {
+    label: 'Nasyiatul Hamidiyah',
+    value: 'Wilayah Nasyiatul Hamidiyah (04)',
+    daerah: ['Nasyiatul Hamidiyah (A)'],
+  },
+  {
+    label: "Fatimatuzzahro'",
+    value: "Wilayah Fatimatuzzahro' (05)",
+    daerah: [
+      'Aminah Az-Zuhriyah (A)',
+      'Khodijah Al-Kubro (B)',
+      "Robi'ah Al-Adawiyah (C)",
+      "Tarbiyatul Mubtadi'at (D)",
+      'Daerah Khusus (E)',
+    ],
+  },
+  {
+    label: 'Jalaluddin Ar-Rumi',
+    value: 'Wilayah Jalaluddin Ar-Rumi (06)',
+    daerah: [
+      "I'dadiyah (A)",
+      'Kebahasaan (B)',
+      "Tahfizdul Qur'an (C)",
+      'At-Turatsiun (D)',
+      'Daerah Khusus (E)',
+    ],
+  },
+  {
+    label: 'Al-Mawaddah',
+    value: 'Wilayah Al-Mawaddah (07)',
+    daerah: [
+      'Daerah (A)',
+      'Daerah (B)',
+      'Daerah (C)',
+      'Daerah (D)',
+      'Daerah (E)',
+      'Daerah (F)',
+    ],
+  },
+  {
+    label: 'Al-Amiri',
+    value: 'Wilayah Al-Amiri (08)',
+    daerah: [
+      "Isti'dadiyah (A)",
+      "I'dadiyah (B)",
+      "Ma'had Aly (C)",
+      'Tamhidiyah (D)',
+      'Daerah Khusus (E)',
+    ],
+  },
+  {
+    label: 'Al-Lathifiyah',
+    value: 'Wilayah Al-Lathifiyah (09)',
+    daerah: [
+      "Pra Ma'had Aly",
+      "Ma'had Aly",
+      'Musyrifah',
+      'Daerah Khusus',
+    ],
+  },
+  {
+    label: 'Zaid bin Tsabit Putra',
+    value: 'Wilayah Zaid bin Tsabit Putra (10)',
+    daerah: [
+      'Excellent Language (D)',
+      "Tahfizdul Qur'an (B)",
+      "Tahsinul Qiro'ah (A)",
+      'Amtsilati (C)',
+      "I'dadiyah (E)",
+      'Al-Mahfudzi (F)',
+    ],
+  },
+  {
+    label: 'Zaid bin Tsabit Putri',
+    value: 'Wilayah Zaid bin Tsabit Putri (11)',
+    daerah: [
+      "Tahfizdul Qur'an (A)",
+      'Takhossus Kitab (B)',
+      'Takhossus Diny (C)',
+      'Daerah Khusus (D)',
+      'English Club Of Zabitsa (E)',
+    ],
+  },
+];
+
+
 export const StudentsView: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,6 +192,16 @@ export const StudentsView: React.FC = () => {
   const [jenisKelamin, setJenisKelamin] = useState('Laki-laki');
   const [wilayah, setWilayah] = useState('');
   const [daerah, setDaerah] = useState('');
+
+  const wilayahTerpilih = DAFTAR_WILAYAH.find(
+    (item) => item.value === wilayah
+  );
+
+  const daftarDaerah = wilayahTerpilih?.daerah || [];
+
+  const daerahLamaTidakTerdaftar =
+    daerah !== '' && !daftarDaerah.includes(daerah);
+
   const [loading, setLoading] = useState(false);
 
   // Excel import states
@@ -139,24 +307,25 @@ export const StudentsView: React.FC = () => {
           niup: '02397228',
           nama_lengkap: 'Muhammad Fatih Robbani',
           jenis_kelamin: 'Laki-laki',
-          wilayah: 'Syekh Jumadil Qubro',
-          daerah: 'KH Hasyim Asyari / Blok B',
+          wilayah: 'Wilayah Syekh Jumadil Kubro (01)',
+          daerah: 'Sunan Gunung Jati (A)',
         },
         {
           niup: '11223355',
           nama_lengkap: 'Fatimah Az-Zahra',
           jenis_kelamin: 'Perempuan',
-          wilayah: 'Wilayah Fatimatuz Zahro',
-          daerah: 'Kamar 05 / Blok A',
+          wilayah: "Wilayah Fatimatuzzahro' (05)",
+          daerah: 'Aminah Az-Zuhriyah (A)',
         },
         {
           niup: '99887722',
-          nama_lengkap: 'Ahmad Muzakki',
-          jenis_kelamin: 'Laki-laki',
-          wilayah: 'Wilayah Al-Azhar',
-          daerah: 'Kamar 10 / Blok C',
+          nama_lengkap: 'Siti Aisyah',
+          jenis_kelamin: 'Perempuan',
+          wilayah: 'Wilayah Az-Zainiyah (02)',
+          daerah: 'Sayyidah Hafshah (A)',
         },
       ];
+
 
       const worksheet = XLSX.utils.json_to_sheet(templateData);
       const workbook = XLSX.utils.book_new();
@@ -552,28 +721,54 @@ export const StudentsView: React.FC = () => {
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">
                       Wilayah Asrama
                     </label>
-                    <input
-                      type="text"
+                    <select
                       required
-                      placeholder="Contoh: Syekh Jumadil Qubro"
                       value={wilayah}
-                      onChange={(e) => setWilayah(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                    />
+                      onChange={(e) => {
+                        setWilayah(e.target.value);
+                        setDaerah('');
+                      }}
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800"
+                    >
+                      <option value="">Pilih Wilayah Asrama</option>
+
+                      {DAFTAR_WILAYAH.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">
-                      Daerah / Blok / Kamar
-                    </label>
-                    <input
-                      type="text"
+                      Daerah
+                    </label>  
+                    <select
                       required
-                      placeholder="Contoh: KH Hasyim Asyari / Kamar 04"
                       value={daerah}
+                      disabled={!wilayah}
                       onChange={(e) => setDaerah(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                    />
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800"
+                    >
+                      <option value="">
+                        {wilayah
+                          ? 'Pilih Daerah'
+                          : 'Pilih Wilayah terlebih dahulu'}
+                      </option>
+
+                      {daerahLamaTidakTerdaftar && (
+                        <option value={daerah}>
+                          {daerah} (Data sebelumnya)
+                        </option>
+                      )}
+
+                      {daftarDaerah.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
