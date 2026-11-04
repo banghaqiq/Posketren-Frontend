@@ -20,6 +20,7 @@ export interface Operator {
   username: string;
   name: string;
   role: Role;
+  wilayah?: string | null;
   photo?: string | null;
   login_attempts?: number;
   locked_until?: string | null;

@@ -44,6 +44,20 @@ const isKeluargaPengasuh = (pkg: PackageItem | null): boolean => {
   );
 };
 
+const WILAYAH_LIST = [
+  'Wilayah Syekh Jumadil Kubro (01)',
+  'Wilayah Az-Zainiyah (02)',
+  'Wilayah Al-Hasyimiyah (03)',
+  'Wilayah Nasyiatul Hamidiyah (04)',
+  "Wilayah Fatimatuzzahro' (05)",
+  'Wilayah Jalaluddin Ar-Rumi (06)',
+  'Wilayah Al-Mawaddah (07)',
+  'Wilayah Al-Amiri (08)',
+  'Wilayah Al-Lathifiyah (09)',
+  'Wilayah Zaid bin Tsabit Putra (10)',
+  'Wilayah Zaid bin Tsabit Putri (11)',
+];
+
 export const ManifestView: React.FC<ManifestViewProps> = ({
   currentUser,
   onOpenLabelPrint,
@@ -52,6 +66,12 @@ export const ManifestView: React.FC<ManifestViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [wilayahFilter, setWilayahFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState<
+    'all' | 'daily' | 'monthly' | 'yearly' | 'custom'
+  >('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedDetailPackage, setSelectedDetailPackage] = useState<PackageItem | null>(null);
   const [previewFullImage, setPreviewFullImage] = useState<string | null>(null);
@@ -62,14 +82,69 @@ export const ManifestView: React.FC<ManifestViewProps> = ({
 
   const { showToast } = useToast();
 
+  const getDateRange = () => {
+  const now = new Date();
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+
+  if (dateFilter === 'daily') {
+    return {
+      startDate: today.toLocaleDateString('en-CA'),
+      endDate: today.toLocaleDateString('en-CA'),
+    };
+  }
+
+  if (dateFilter === 'monthly') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    return {
+      startDate: start.toLocaleDateString('en-CA'),
+      endDate: end.toLocaleDateString('en-CA'),
+    };
+  }
+
+  if (dateFilter === 'yearly') {
+    return {
+      startDate: `${now.getFullYear()}-01-01`,
+      endDate: `${now.getFullYear()}-12-31`,
+    };
+  }
+
+  if (dateFilter === 'custom') {
+    return {
+      startDate: customStartDate || undefined,
+      endDate: customEndDate || undefined,
+    };
+  }
+
+  return {
+    startDate: undefined,
+    endDate: undefined,
+  };
+};
+
   const fetchPackages = async () => {
-    setLoading(true);
+  setLoading(true);
+    const { startDate, endDate } = getDateRange();
     try {
       const data = await packagesApi.getAll({
         search: searchQuery,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         type: typeFilter !== 'all' ? typeFilter : undefined,
+        wilayah:
+          currentUser?.role === 'keamanan'
+            ? currentUser.wilayah || ''
+            : wilayahFilter !== 'all'
+              ? wilayahFilter
+              : undefined,
+        startDate,
+        endDate,
       });
+
       setPackages(data);
     } catch (err) {
       console.error(err);
@@ -79,9 +154,16 @@ export const ManifestView: React.FC<ManifestViewProps> = ({
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
     fetchPackages();
-  }, [statusFilter, typeFilter]);
+  }, [
+    statusFilter,
+    typeFilter,
+    wilayahFilter,
+    dateFilter,
+    customStartDate,
+    customEndDate,
+  ]);
 
   const handleDelete = async (pkg: PackageItem) => {
     if (!confirm(`Hapus permanen paket resi '${pkg.trackingNumber}' (${pkg.recipientName}) dari database?`)) {
@@ -419,6 +501,58 @@ export const ManifestView: React.FC<ManifestViewProps> = ({
           <option value="dikembalikan">Dikembalikan (RTS)</option>
           <option value="paket_anonim">Paket Anonim</option>
         </select>
+
+        {/* Filter Wilayah - Admin & Petugas Pos */}
+        {currentUser?.role !== 'keamanan' && (
+          <select
+            value={wilayahFilter}
+            onChange={(e) => setWilayahFilter(e.target.value)}
+            className="w-full sm:w-56 px-3.5 py-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+          >
+            <option value="all">Semua Wilayah</option>
+
+            {WILAYAH_LIST.map((wilayah) => (
+              <option key={wilayah} value={wilayah}>
+                {wilayah}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Filter Tanggal */}
+        <select
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value as any)}
+          className="w-full sm:w-44 px-3.5 py-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+        >
+          <option value="all">Semua Tanggal</option>
+          <option value="daily">Harian (Hari Ini)</option>
+          <option value="monthly">Bulanan (Bulan Ini)</option>
+          <option value="yearly">Tahunan (Tahun Ini)</option>
+          <option value="custom">Rentang Tanggal</option>
+        </select>
+
+        {/* Input Rentang Tanggal */}
+        {dateFilter === 'custom' && (
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <input
+              type="date"
+              value={customStartDate}
+              onChange={(e) => setCustomStartDate(e.target.value)}
+              className="w-full px-3 py-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+              aria-label="Tanggal mulai"
+            />
+
+            <input
+              type="date"
+              value={customEndDate}
+              min={customStartDate || undefined}
+              onChange={(e) => setCustomEndDate(e.target.value)}
+              className="w-full px-3 py-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+              aria-label="Tanggal akhir"
+            />
+          </div>
+        )}
       </div>
 
       {/* Master Data Table */}
@@ -466,8 +600,14 @@ export const ManifestView: React.FC<ManifestViewProps> = ({
                     <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
                       {pkg.recipientName}
                     </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                      {pkg.asrama && !pkg.recipientName.includes('Keluarga Pengasuh') && pkg.recipientId !== 'ANONIM' ? `${pkg.asrama} • ` : ''}{pkg.wilayah}
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                      {pkg.asrama &&
+                      !pkg.recipientName.includes('Keluarga Pengasuh') &&
+                      pkg.recipientId !== 'ANONIM'
+                        ? `${pkg.asrama} • `
+                        : ''}
+                      {pkg.wilayah}
+                      {pkg.daerah ? ` • ${pkg.daerah}` : ''}
                     </div>
                   </div>
                   <div className="shrink-0">{getStatusBadge(pkg.status)}</div>

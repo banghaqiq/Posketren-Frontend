@@ -25,6 +25,20 @@ import { Operator, Role, Student } from '../../types';
 import { useToast } from '../Toast';
 import { processAndCompressImage } from '../../lib/image-utils';
 
+const DAFTAR_WILAYAH = [
+  'Wilayah Syekh Jumadil Kubro (01)',
+  'Wilayah Jalaluddin Ar-Rumi (06)',
+  'Wilayah Al-Amiri (08)',
+  'Wilayah Zaid bin Tsabit Putra (10)',
+  'Wilayah Az-Zainiyah (02)',
+  'Wilayah Al-Hasyimiyah (03)',
+  "Wilayah Fatimatuzzahro' (05)",
+  'Wilayah Al-Mawaddah (07)',
+  'Wilayah Al-Lathifiyah (09)',
+  'Wilayah Zaid bin Tsabit Putri (11)',
+  'Wilayah Nasyiatul Hamidiyah (04)',
+];
+
 interface OperatorsViewProps {
   currentUser?: Operator | null;
   onUserUpdated?: (updated: Operator) => void;
@@ -44,6 +58,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
   const [createPassword, setCreatePassword] = useState('');
   const [createName, setCreateName] = useState('');
   const [createRole, setRole] = useState<Role>('petugaspos');
+  const [createWilayah, setCreateWilayah] = useState('');
   const [createPhoto, setCreatePhoto] = useState<string>('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [studentSearch, setStudentSearch] = useState('');
@@ -56,6 +71,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editRole, setEditRole] = useState<Role>('petugaspos');
+  const [editWilayah, setEditWilayah] = useState('');
   const [editPhoto, setEditPhoto] = useState<string>('');
 
   // Delete Modal State
@@ -152,6 +168,11 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
       return;
     }
 
+    if (createRole === 'keamanan' && !createWilayah) {
+      showToast('Wilayah wajib dipilih untuk akun keamanan', 'warning');
+      return;
+    }
+
     // Validation: Operator must be a registered student
     if (!isNameVerifiedStudent) {
       showToast(
@@ -168,6 +189,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
         password: createPassword.trim(),
         name: createName.trim(),
         role: createRole,
+        wilayah: createRole === 'keamanan' ? createWilayah : undefined,
         photo: createPhoto || undefined,
       });
 
@@ -180,6 +202,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
       setSelectedStudent(null);
       setStudentSearch('');
       setRole('petugaspos');
+      setCreateWilayah('');
       fetchOperators();
     } catch (err: any) {
       console.error(err);
@@ -195,6 +218,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
     setEditName(op.name);
     setEditUsername(op.username);
     setEditRole(op.role);
+    setEditWilayah(op.wilayah || '');
     setEditPhoto(op.photo || '');
     setEditPassword(''); // empty means keep unchanged
     setIsEditOpen(true);
@@ -210,12 +234,18 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
       return;
     }
 
+    if (editRole === 'keamanan' && !editWilayah) {
+      showToast('Wilayah wajib dipilih untuk akun keamanan', 'warning');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload: any = {
         name: editName.trim(),
         username: editUsername.trim().toLowerCase(),
         role: editRole,
+        wilayah: editRole === 'keamanan' ? editWilayah : '',
         photo: editPhoto || null,
       };
 
@@ -387,9 +417,17 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                       <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
                         @{op.username}
                       </div>
+                      <div className="flex flex-col items-start gap-1">
+                        {getRoleBadge(op.role)}
+
+                        {op.role === 'keamanan' && op.wilayah && (
+                          <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                            {op.wilayah}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="shrink-0">{getRoleBadge(op.role)}</div>
                 </div>
 
                 <div className="flex items-center justify-between text-xs pt-1">
@@ -506,7 +544,17 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                     </td>
 
                     {/* Role */}
-                    <td className="px-4 py-3">{getRoleBadge(op.role)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col items-start gap-1">
+                        {getRoleBadge(op.role)}
+
+                        {op.role === 'keamanan' && op.wilayah && (
+                          <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                            {op.wilayah}
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
                     {/* Status */}
                     <td className="px-4 py-3">
@@ -722,6 +770,34 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                   </select>
                 </div>
 
+                {/* 4.1 Wilayah Khusus Akun Keamanan */}
+                {createRole === 'keamanan' && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                      Wilayah Penugasan <span className="text-rose-500">*</span>
+                    </label>
+
+                    <select
+                      required
+                      value={createWilayah}
+                      onChange={(e) => setCreateWilayah(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
+                    >
+                      <option value="">Pilih Wilayah Keamanan</option>
+
+                      {DAFTAR_WILAYAH.map((wilayah) => (
+                        <option key={wilayah} value={wilayah}>
+                          {wilayah}
+                        </option>
+                      ))}
+                    </select>
+
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                      Akun keamanan hanya dapat mengakses paket dari wilayah yang ditentukan.
+                    </p>
+                  </div>
+                )}  
+
                 {/* 5. Profile Photo (Optional) */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
@@ -860,7 +936,14 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                     </label>
                     <select
                       value={editRole}
-                      onChange={(e) => setEditRole(e.target.value as any)}
+                      onChange={(e) => {
+                        const role = e.target.value as Role;
+                        setEditRole(role);
+
+                        if (role !== 'keamanan') {
+                          setEditWilayah('');
+                        }
+                      }}
                       className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
                     >
                       <option value="petugaspos">Petugas Pos Paket</option>
@@ -868,6 +951,30 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                       <option value="admin">Administrator Penuh</option>
                     </select>
                   </div>
+
+                  {/* 2.1 Wilayah Khusus Akun Keamanan */}
+                  {editRole === 'keamanan' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                        Wilayah Penugasan <span className="text-rose-500">*</span>
+                      </label>
+
+                      <select
+                        required
+                        value={editWilayah}
+                        onChange={(e) => setEditWilayah(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
+                      >
+                        <option value="">Pilih Wilayah Keamanan</option>
+
+                        {DAFTAR_WILAYAH.map((wilayah) => (
+                          <option key={wilayah} value={wilayah}>
+                            {wilayah}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* 3. New Password (optional) */}

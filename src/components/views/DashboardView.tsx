@@ -305,8 +305,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
                         {pkg.recipientName}
                       </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                        {pkg.asrama && !pkg.recipientName.includes('Keluarga Pengasuh') && pkg.recipientId !== 'ANONIM' ? `${pkg.asrama} • ` : ''}{pkg.wilayah}
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {pkg.asrama &&
+                        !pkg.recipientName.includes('Keluarga Pengasuh') &&
+                        pkg.recipientId !== 'ANONIM'
+                          ? `${pkg.asrama} • `
+                          : ''}
+                        {pkg.wilayah}
+                        {pkg.daerah ? ` • ${pkg.daerah}` : ''}
                       </div>
                     </div>
                     <div className="shrink-0">{getStatusBadge(pkg.status)}</div>

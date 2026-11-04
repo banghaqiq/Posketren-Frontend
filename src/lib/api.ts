@@ -33,7 +33,15 @@ export const authApi = {
 };
 
 export const packagesApi = {
-  getAll: async (params?: { search?: string; status?: string; type?: string; courier?: string }) => {
+  getAll: async (params?: {
+    search?: string;
+    status?: string;
+    type?: string;
+    courier?: string;
+    wilayah?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
     const res = await api.get<PackageItem[]>('/packages', { params });
     return res.data;
   },
