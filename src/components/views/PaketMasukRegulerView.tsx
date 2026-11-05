@@ -28,7 +28,7 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
   currentUser,
   onOpenLabelPrint,
 }) => {
-  const [activeMode, setActiveMode] = useState<'single' | 'bulk'>('single');
+  const [activeMode] = useState<'single'>('single');
 
   // Single form states
   const [courier, setCourier] = useState('J&T Express');
@@ -46,13 +46,6 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [createdPackage, setCreatedPackage] = useState<PackageItem | null>(null);
-
-  // Bulk form states
-  const [bulkCourier, setBulkCourier] = useState('J&T Express');
-  const [bulkResiText, setBulkResiText] = useState('');
-  const [bulkPackages, setBulkPackages] = useState<Array<{ trackingNumber: string; recipientName: string; type: string }>>([]);
-  const [bulkLoading, setBulkLoading] = useState(false);
-  const [bulkSuccessCount, setBulkSuccessCount] = useState<number | null>(null);
 
   const { showToast } = useToast();
 
@@ -90,11 +83,23 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
 
     if (upper.startsWith('SPX') || upper.startsWith('ID')) {
       detectedCourier = 'Shopee Xpress';
-    } else if (upper.startsWith('JT') || upper.startsWith('JP') || upper.startsWith('888')) {
+    } else if (
+      upper.startsWith('JT') ||
+      upper.startsWith('JP') ||
+      upper.startsWith('888')
+    ) {
       detectedCourier = 'J&T Express';
-    } else if (upper.startsWith('00') || upper.startsWith('TKP') || upper.startsWith('SIC')) {
+    } else if (
+      upper.startsWith('00') ||
+      upper.startsWith('TKP') ||
+      upper.startsWith('SIC')
+    ) {
       detectedCourier = 'SiCepat Ekspres';
-    } else if (upper.startsWith('SOC') || upper.startsWith('JNE') || upper.startsWith('CGK')) {
+    } else if (
+      upper.startsWith('SOC') ||
+      upper.startsWith('JNE') ||
+      upper.startsWith('CGK')
+    ) {
       detectedCourier = 'JNE Reguler';
     } else if (upper.startsWith('POS') || upper.startsWith('10')) {
       detectedCourier = 'Pos Indonesia';
@@ -104,15 +109,13 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
       detectedCourier = 'Anteraja';
     }
 
-    if (activeMode === 'single') {
-      setTrackingNumber(scannedResi);
-      setCourier(detectedCourier);
-      showToast(`Resi kurir terbaca: ${scannedResi} (${detectedCourier})`, 'success');
-    } else {
-      setBulkResiText((prev) => (prev ? `${prev}\n${scannedResi}` : scannedResi));
-      setBulkCourier(detectedCourier);
-      showToast(`Resi ${scannedResi} ditambahkan ke daftar massal!`, 'success');
-    }
+    setTrackingNumber(scannedResi);
+    setCourier(detectedCourier);
+
+    showToast(
+      `Resi kurir terbaca: ${scannedResi} (${detectedCourier})`,
+      'success'
+    );
   };
 
   const handleSubmitSingle = async (e: React.FormEvent) => {
@@ -193,54 +196,6 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
     }
   };
 
-  const handleProcessBulkInput = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const lines = bulkResiText
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-
-    if (lines.length === 0) {
-      showToast('Masukkan minimal satu nomor resi untuk input massal', 'error');
-      return;
-    }
-
-    setBulkLoading(true);
-    try {
-      const packagesPayload = lines.map((line) => {
-        // Can be "RESI, NAMA" or just "RESI"
-        const parts = line.split(/[,;\t]/).map((p) => p.trim());
-        const resi = parts[0];
-        const name = parts[1] || 'Santri Penerima (Belum Ditentukan)';
-
-        return {
-          trackingNumber: resi,
-          courier: bulkCourier,
-          recipientId: 'BULK',
-          recipientName: name,
-          asrama: 'Putra' as const,
-          wilayah: 'Pos Paket Pusat',
-          daerah: 'Pos Paket Pusat',
-          type: 'regular' as const,
-          status: 'diterima_petugas' as const,
-          dateReceived: new Date().toISOString().slice(0, 10),
-          kondisi: 'baik' as const,
-          notes: 'Input massal kedatangan kurir ekspedisi',
-        };
-      });
-
-      const res = await packagesApi.bulkCreate(packagesPayload, currentUser?.name || 'Petugas Pos');
-      setBulkSuccessCount(res.length);
-      showToast(`Berhasil memproses ${res.length} paket (data baru disimpan, resi ganda otomatis diperbarui)!`, 'success');
-      setBulkResiText('');
-    } catch (err: any) {
-      console.error(err);
-      showToast('Gagal memproses input massal paket', 'error');
-    } finally {
-      setBulkLoading(false);
-    }
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header View */}
@@ -254,7 +209,7 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
             Penerimaan Paket Reguler Masuk
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Catat paket dari kurir ekspedisi (J&T, Shopee Xpress, JNE, SiCepat, Pos, dll) baik secara satuan maupun massal.
+            Catat paket dari kurir ekspedisi (J&T, Shopee Xpress, JNE, SiCepat, Pos, dll) secara satuan.
           </p>
         </div>
 
@@ -266,34 +221,6 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
         >
           <Camera className="w-4 h-4" />
           <span>Buka Scanner Kamera</span>
-        </button>
-      </div>
-
-      {/* Mode Switcher Tabs: Satuan vs Massal */}
-      <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-full sm:w-fit border border-slate-200 dark:border-slate-700">
-        <button
-          type="button"
-          onClick={() => setActiveMode('single')}
-          className={`flex-1 sm:flex-initial px-4 py-2.5 min-h-[42px] text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
-            activeMode === 'single'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <PackagePlus className="w-4 h-4" />
-          <span>Input Satuan</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMode('bulk')}
-          className={`flex-1 sm:flex-initial px-4 py-2.5 min-h-[42px] text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
-            activeMode === 'bulk'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Scan Massal</span>
         </button>
       </div>
 
@@ -322,27 +249,6 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
             <Printer className="w-4 h-4" />
             Cetak Label Paket
           </button>
-        </motion.div>
-      )}
-
-      {/* Success Banner Bulk */}
-      {bulkSuccessCount !== null && activeMode === 'bulk' && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between gap-4"
-        >
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <div>
-              <div className="text-xs font-bold text-emerald-950 dark:text-emerald-200">
-                Input Massal Berhasil!
-              </div>
-              <div className="text-[11px] text-emerald-800 dark:text-emerald-400 mt-0.5">
-                Sebanyak <span className="font-bold">{bulkSuccessCount} paket</span> telah berhasil disimpan ke sistem dan database.
-              </div>
-            </div>
-          </div>
         </motion.div>
       )}
 
@@ -619,92 +525,6 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
                 <>
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Simpan Paket Reguler</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* 2. BULK SCAN / MASS INPUT MODE */}
-      {activeMode === 'bulk' && (
-        <form
-          onSubmit={handleProcessBulkInput}
-          className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 md:p-8 space-y-6 transition-colors"
-        >
-          <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 space-y-1">
-            <div className="font-bold flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              Mode Input & Scan Cepat Massal (Batch Ekspedisi)
-            </div>
-            <p className="text-[11px] text-blue-800 dark:text-blue-300">
-              Gunakan mode ini ketika kurir ekspedisi mengantarkan banyak paket sekaligus. Anda dapat men-scan resi berturut-turut dengan kamera, atau paste daftar nomor resi kurir ke textarea di bawah (satu resi per baris).
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">
-                Ekspedisi Batch Ini
-              </label>
-              <select
-                value={bulkCourier}
-                onChange={(e) => setBulkCourier(e.target.value)}
-                className="w-full px-3.5 py-2.5 min-h-[44px] text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-              >
-                <option value="J&T Express">J&T Express</option>
-                <option value="Shopee Xpress">Shopee Xpress (SPX)</option>
-                <option value="JNE Reguler">JNE Express</option>
-                <option value="SiCepat Ekspres">SiCepat Ekspres</option>
-                <option value="Pos Indonesia">Pos Indonesia</option>
-                <option value="Ninja Xpress">Ninja Xpress</option>
-                <option value="Wahana Express">Wahana Express</option>
-              </select>
-            </div>
-
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(true)}
-                className="w-full min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold text-xs rounded-xl border border-blue-200 dark:border-blue-800 transition cursor-pointer active:scale-95"
-              >
-                <Camera className="w-4 h-4" />
-                <span>Buka Scanner Kamera Cepat</span>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
-                Daftar Nomor Resi (1 Resi per Baris, atau Format: Resi, Nama Penerima)
-              </label>
-              <span className="text-[11px] font-mono font-bold text-slate-500">
-                {bulkResiText ? bulkResiText.split('\n').filter((l) => l.trim()).length : 0} Resi
-              </span>
-            </div>
-            <textarea
-              rows={8}
-              required
-              placeholder={'Contoh:\nJT9812739121ID\nJT9812739122ID, Ahmad Fauzan\nSPXID048192837, Siti Aminah\nJNE098273618'}
-              value={bulkResiText}
-              onChange={(e) => setBulkResiText(e.target.value)}
-              className="w-full p-3.5 text-xs font-mono border border-slate-300 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white leading-relaxed"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="submit"
-              disabled={bulkLoading || !bulkResiText.trim()}
-              className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              {bulkLoading ? (
-                <span>Menyimpan Seluruh Paket...</span>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Proses Simpan Semua Paket Massal</span>
                 </>
               )}
             </button>

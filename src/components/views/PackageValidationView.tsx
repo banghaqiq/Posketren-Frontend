@@ -58,6 +58,13 @@ export const PackageValidationView: React.FC<PackageValidationViewProps> = ({
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Mass scanning states
+  const [isMassScanMode, setIsMassScanMode] = useState(false);
+  const [scannedQueue, setScannedQueue] = useState<PackageItem[]>([]);
+  const [isBulkValidating, setIsBulkValidating] = useState(false);
+
+  const scannedQueueIdsRef = useRef<Set<string>>(new Set());
+
   // Form states for delivery / transfer
   const [actionType, setActionType] = useState<'to_asrama' | 'to_santri'>('to_asrama');
   const [kondisiFisik, setKondisiFisik] = useState<'baik' | 'rusak'>('baik');
@@ -165,66 +172,99 @@ export const PackageValidationView: React.FC<PackageValidationViewProps> = ({
     }
   };
 
-  // const handleScanResi = (scannedResi: string) => {
-  //   setSearchQuery(scannedResi);
-  //   packagesApi.getAll({ search: scannedResi }).then((results) => {
-  //     // Filter out already delivered
-  //     const available = results.filter(
-  //       (p) => p.status !== 'telah_diantarkan' && p.status !== 'telah_diterima' && p.status !== 'disita' && p.status !== 'dikembalikan'
-  //     );
-  //     setPackages(available);
-  //     if (available.length > 0) {
-  //       handleSelectPackage(available[0]);
-  //       showToast(`Paket ditemukan: ${available[0].id} (Acuan: ${available[0].trackingNumber})`, 'success');
-  //     } else {
-  //       showToast(`Paket '${scannedResi}' tidak ditemukan dalam antrian serah terima`, 'warning');
-  //     }
-  //   });
-  // };
-
-  const handleScanResi = (scannedResi: string) => {
+  const handleScanResi = async (scannedResi: string) => {
   if (!scannedResi) return;
 
-  // Hindari pencarian berulang untuk resi yang sama
-  if (lastScannedRef.current === scannedResi) return;
+  try {
+    setSearchQuery(scannedResi);
 
-  lastScannedRef.current = scannedResi;
-  setSearchQuery(scannedResi);
+    const results = await packagesApi.getAll({
+      search: scannedResi,
+    });
 
-  packagesApi.getAll({ search: scannedResi })
-    .then((results) => {
+    const available = results.filter(
+      (pkg) =>
+        pkg.trackingNumber === scannedResi &&
+        pkg.status !== 'telah_diantarkan' &&
+        pkg.status !== 'telah_diterima' &&
+        pkg.status !== 'disita' &&
+        pkg.status !== 'dikembalikan'
+    );
+
+    if (available.length === 0) {
+      showToast(
+        `Paket dengan resi ${scannedResi} tidak ditemukan atau sudah selesai!`,
+        'warning'
+      );
+      return;
+    }
+
+    handleSelectPackage(available[0]);
+
+    showToast(
+      `Paket ditemukan: ${available[0].trackingNumber}`,
+      'success'
+    );
+  } catch (error) {
+    console.error('Gagal mencari paket hasil scan:', error);
+    showToast('Gagal mencari paket berdasarkan resi!', 'error');
+  }
+};
+
+  const handleMassScanResi = async (scannedResi: string) => {
+    if (!scannedResi) return;
+
+    // Hindari duplikat nomor resi dalam antrean
+    if (scannedQueueIdsRef.current.has(scannedResi)) {
+      showToast(`Resi ${scannedResi} sudah ada dalam antrean scan!`, 'warning');
+      return;
+    }
+
+    try {
+      const results = await packagesApi.getAll({ search: scannedResi });
+
       const available = results.filter(
-        (p) =>
-          p.status !== 'telah_diantarkan' &&
-          p.status !== 'telah_diterima' &&
-          p.status !== 'disita' &&
-          p.status !== 'dikembalikan'
+        (pkg) =>
+          pkg.trackingNumber === scannedResi &&
+          pkg.status !== 'telah_diantarkan' &&
+          pkg.status !== 'telah_diterima' &&
+          pkg.status !== 'disita' &&
+          pkg.status !== 'dikembalikan'
       );
 
-      setPackages(available);
-
-      if (available.length > 0) {
-        handleSelectPackage(available[0]);
-
-        showToast(
-          `Paket ditemukan: ${available[0].id} (Acuan: ${available[0].trackingNumber})`,
-          'success'
-        );
-      } else {
-        showToast(
-          `Paket '${scannedResi}' tidak ditemukan dalam antrian serah terima`,
-          'warning'
-        );
+      if (available.length === 0) {
+        showToast(`Paket dengan resi ${scannedResi} tidak ditemukan atau sudah selesai!`, 'warning');
+        return;
       }
-    })
-    .catch((error) => {
-      console.error('Gagal mencari paket hasil scan:', error);
 
-      // Izinkan mencoba kembali jika request gagal
-      lastScannedRef.current = null;
+      const pkg = available[0];
 
-      showToast('Gagal mencari paket. Silakan coba kembali.', 'error');
-    });
+      // Cegah ID paket yang sama masuk dua kali
+      if (scannedQueueIdsRef.current.has(pkg.id)) {
+        showToast(`Paket ${pkg.id} sudah ada dalam antrean!`, 'warning');
+        return;
+      }
+
+      scannedQueueIdsRef.current.add(pkg.id);
+
+      setScannedQueue((prev) => [...prev, pkg]);
+
+      showToast(
+        `Berhasil scan ${scannedQueueIdsRef.current.size} paket: ${pkg.trackingNumber}`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Gagal memproses hasil scan massal:', error);
+      showToast(`Gagal mencari paket dengan resi ${scannedResi}`, 'error');
+    }
+  };
+
+  const handleRemoveFromScannedQueue = (packageId: string) => {
+    scannedQueueIdsRef.current.delete(packageId);
+
+    setScannedQueue((prev) =>
+      prev.filter((pkg) => pkg.id !== packageId)
+    );
   };
 
   const handleProcessValidation = async (e: React.FormEvent) => {
@@ -306,17 +346,146 @@ export const PackageValidationView: React.FC<PackageValidationViewProps> = ({
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Penyaluran dari Pos Paket ke Pengurus Asrama dan Serah Terima langsung ke santri penerima.
           </p>
-        </div>
+        </div>        
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setIsMassScanMode(false);
+              setIsScannerOpen(true);
+            }}
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-md cursor-pointer active:scale-95"
+          >
+            <Camera className="w-4 h-4" />
+            Scan Resi Satuan
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setIsScannerOpen(true)}
-          className="w-full sm:w-auto min-h-[44px] flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-md shadow-blue-600/20 cursor-pointer active:scale-95"
-        >
-          <Camera className="w-4 h-4" />
-          <span>Scan Resi / Barcode</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsMassScanMode(true);
+              setIsScannerOpen(true);
+            }}
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-md cursor-pointer active:scale-95"
+          >
+            <Camera className="w-4 h-4" />
+            Scan Massal
+          </button>
+        </div>
       </div>
+      
+      {/* Mass Scan Queue */}
+      {scannedQueue.length > 0 && (
+        <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300">
+                Antrean Scan Massal ({scannedQueue.length} paket)
+              </h3>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                Paket berhasil dipindai dan siap divalidasi.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              disabled={isBulkValidating}
+              onClick={async () => {
+                if (scannedQueue.length === 0) return;
+
+                const confirmed = window.confirm(
+                  `Validasi ${scannedQueue.length} paket sekaligus?`
+                );
+
+                if (!confirmed) return;
+
+                setIsBulkValidating(true);
+
+                let successCount = 0;
+                let failedCount = 0;
+                const successIds = new Set<string>();
+
+                for (const pkg of scannedQueue) {
+                  try {
+                    await packagesApi.update(pkg.id, {
+                      status: 'diterima_pengurus',
+                    });
+
+                    successCount++;
+                    successIds.add(pkg.id);
+                  } catch (error) {
+                    console.error(`Gagal validasi paket ${pkg.id}:`, error);
+                    failedCount++;
+                  }
+                }
+
+                for (const pkg of scannedQueue) {
+                  // ID paket berhasil disimpan di successIds
+                }
+
+                // Hapus hanya paket yang berhasil divalidasi.
+                // Paket gagal tetap berada dalam antrean.
+                setScannedQueue((prev) =>
+                  prev.filter((pkg) => !successIds.has(pkg.id))
+                );
+
+                successIds.forEach((id) => {
+                  scannedQueueIdsRef.current.delete(id);
+                });
+                setIsBulkValidating(false);
+
+                showToast(
+                  `Validasi selesai: ${successCount} berhasil, ${failedCount} gagal.`,
+                  failedCount > 0 ? 'warning' : 'success'
+                );
+
+                fetchPackages();
+              }}
+              className="min-h-[42px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isBulkValidating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Memvalidasi...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Validasi Semua Paket
+              </>
+              )}
+            </button>
+          </div>
+
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {scannedQueue.map((pkg) => (
+              <div
+                key={pkg.id}
+                className="flex items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-emerald-100 dark:border-emerald-900"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono font-bold text-xs text-slate-900 dark:text-white truncate">
+                    {pkg.trackingNumber}
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 truncate">
+                    {pkg.recipientName} · {pkg.wilayah}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFromScannedQueue(pkg.id)}
+                  disabled={isBulkValidating}
+                  className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg disabled:opacity-50"
+                  title="Hapus dari antrean"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
@@ -848,8 +1017,13 @@ export const PackageValidationView: React.FC<PackageValidationViewProps> = ({
       <CameraScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
-        onScan={handleScanResi}
-        title="Scan Barcode Resi untuk Validasi"
+        onScan={isMassScanMode ? handleMassScanResi : handleScanResi}
+        continuous={isMassScanMode}
+        title={
+          isMassScanMode
+            ? 'Scan Massal Resi Paket'
+            : 'Scan Barcode Resi untuk Validasi'
+        }
       />
     </div>
   );
