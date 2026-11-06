@@ -732,7 +732,9 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                       required
                       placeholder="Username"
                       value={createUsername}
-                      onChange={(e) => setCreateUsername(e.target.value)}
+                      onChange={(e) =>
+                        setCreateUsername(e.target.value.replace(/\s/g, ''))
+                      }
                       autoCapitalize="none"
                       autoCorrect="off"
                       spellCheck={false}
@@ -923,7 +925,9 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                       type="text"
                       required
                       value={editUsername}
-                      onChange={(e) => setEditUsername(e.target.value)}
+                      onChange={(e) =>
+                        setEditUsername(e.target.value.replace(/\s/g, ''))
+                      }
                       autoCapitalize="none"
                       autoCorrect="off"
                       spellCheck={false}
