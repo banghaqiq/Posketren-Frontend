@@ -41,7 +41,7 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
   const [wilayah, setWilayah] = useState('');
   const [daerah, setDaerah] = useState('');
   const [notes, setNotes] = useState('');
-  const [recipientType, setRecipientType] = useState<'santri' | 'anonim' | 'pengasuh'>('santri');
+  const [recipientType, setRecipientType] = useState<'santri' | 'anonim' | 'pengasuh' | 'instansi'>('santri');
   const [manualName, setManualName] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -129,9 +129,21 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
       showToast('Nama santri penerima wajib diisi', 'error');
       return;
     }
-
-    if ((recipientType === 'anonim' || recipientType === 'pengasuh') && !manualName.trim()) {
-      showToast(`Nama penerima ${recipientType === 'anonim' ? 'anonim' : 'keluarga pengasuh'} wajib diisi`, 'error');
+    
+    if (
+      ['anonim', 'pengasuh', 'instansi'].includes(recipientType) &&
+      !manualName.trim()
+    ) {
+      showToast(
+        `Nama ${
+          recipientType === 'anonim'
+            ? 'penerima anonim'
+            : recipientType === 'pengasuh'
+              ? 'keluarga pengasuh'
+              : 'instansi/lembaga'
+        } wajib diisi`,
+        'error',
+      );
       return;
     }
 
@@ -155,6 +167,12 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
         status = 'diterima_petugas';
         packageWilayah = 'Kediaman Pengasuh / Dzurriyah';
         packageDaerah = 'Dalem Kasepuhan';
+      } else if (recipientType === 'instansi') {
+        recipientId = 'INSTANSI';
+        recipientName = manualName.trim();
+        status = 'diterima_petugas';
+        packageWilayah = 'Pos Paket Pusat';
+        packageDaerah = 'Pos Paket Pusat';
       } else {
         recipientId = selectedStudent?.niup || 'MANUAL';
       }
@@ -173,6 +191,12 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
         kondisi: 'baik',
         notes: notes.trim() || undefined,
         operator: currentUser?.name || 'Petugas Pos',
+        isExternalRecipient:
+        recipientType === 'instansi',
+        manualRecipientName:
+          recipientType === 'instansi'
+            ? manualName.trim()
+            : undefined,
       };
 
       const res = await packagesApi.create(payload);
@@ -305,12 +329,12 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
             </div>
           </div>
 
-          {/* Category Checkboxes: Santri vs Anonim vs Keluarga Pengasuh */}
+          {/* Category Checkboxes: Santri vs Anonim vs Keluarga Pengasuh vs Instansi */}
           <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
               Kategori Penerima Paket
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Option 1: Santri Terdaftar */}
               <label
                 className={`p-3.5 rounded-2xl border flex items-start gap-3 cursor-pointer transition ${
@@ -376,6 +400,31 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
                   <div className="text-xs font-bold">Keluarga Pengasuh</div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                     Paket Dzurriyah / Pengasuh (input nama saja)
+                  </div>
+                </div>
+              </label>
+
+              {/* Option 4: Instansi / Lembaga */}
+              <label
+                className={`p-3.5 rounded-2xl border flex items-start gap-3 cursor-pointer transition ${
+                  recipientType === 'instansi'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-xs'
+                    : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="recipientType"
+                  checked={recipientType === 'instansi'}
+                  onChange={() => setRecipientType('instansi')}
+                  className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                />
+                <div>
+                  <div className="text-xs font-bold">
+                    Instansi / Lembaga
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Paket milik instansi atau lembaga (input nama saja)
                   </div>
                 </div>
               </label>
@@ -477,15 +526,19 @@ export const PaketMasukRegulerView: React.FC<PaketMasukRegulerViewProps> = ({
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">
                   {recipientType === 'pengasuh'
                     ? 'Nama Keluarga Pengasuh / Dzurriyah'
-                    : 'Nama Penerima (Tercantum pada Paket Anonim)'}
+                    : recipientType === 'instansi'
+                      ? 'Nama Instansi / Lembaga'
+                      : 'Nama Penerima (Tercantum pada Paket Anonim)'}
                 </label>
                 <input
                   type="text"
                   required
                   placeholder={
                     recipientType === 'pengasuh'
-                      ? 'Contoh: Ning Hj. Khodijah / Gus Haris...'
-                      : 'Contoh: Nama tidak jelas / Pak Slamet...'
+                      ? 'Contoh: Ning Hj. Khodijah / Gus Faiz...'
+                      : recipientType === 'instansi'
+                        ? 'Contoh: Universitas Nurul Jadid / Koperasi...'
+                        : 'Contoh: Nama tidak jelas / Pak Slamet...'
                   }
                   value={manualName}
                   onChange={(e) => setManualName(e.target.value)}
