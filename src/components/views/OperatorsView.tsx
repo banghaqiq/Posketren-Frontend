@@ -24,20 +24,9 @@ import { operatorsApi, studentsApi } from '../../lib/api';
 import { Operator, Role, Student } from '../../types';
 import { useToast } from '../Toast';
 import { processAndCompressImage } from '../../lib/image-utils';
+import { DAFTAR_NAMA_WILAYAH } from '../../lib/pesantren-constants';
 
-const DAFTAR_WILAYAH = [
-  'Wilayah Syekh Jumadil Kubro (01)',
-  'Wilayah Jalaluddin Ar-Rumi (06)',
-  'Wilayah Al-Amiri (08)',
-  'Wilayah Zaid bin Tsabit Putra (10)',
-  'Wilayah Az-Zainiyah (02)',
-  'Wilayah Al-Hasyimiyah (03)',
-  "Wilayah Fatimatuzzahro' (05)",
-  'Wilayah Al-Mawaddah (07)',
-  'Wilayah Al-Lathifiyah (09)',
-  'Wilayah Zaid bin Tsabit Putri (11)',
-  'Wilayah Nasyiatul Hamidiyah (04)',
-];
+const DAFTAR_WILAYAH = DAFTAR_NAMA_WILAYAH;
 
 interface OperatorsViewProps {
   currentUser?: Operator | null;

@@ -25,28 +25,11 @@ import { PackageItem, Operator } from '../../types';
 import { useToast } from '../Toast';
 import { CameraScannerModal } from '../CameraScannerModal';
 import { processAndCompressImage } from '../../lib/image-utils';
+import { isKeluargaPengasuh } from '../../lib/package-helpers';
 
 interface PackageValidationViewProps {
   currentUser: Operator | null;
 }
-
-// Helper to identify packages intended for pesantren caregiver family (Keluarga Pengasuh)
-const isKeluargaPengasuh = (pkg: PackageItem | null): boolean => {
-  if (!pkg) return false;
-  const name = (pkg.recipientName || '').toLowerCase();
-  const id = (pkg.recipientId || '').toUpperCase();
-  const wilayah = (pkg.wilayah || '').toLowerCase();
-  const daerah = (pkg.daerah || '').toLowerCase();
-  return (
-    id === 'PENGASUH' ||
-    name.includes('pengasuh') ||
-    name.includes('dzurriyah') ||
-    name.includes('[keluarga pengasuh]') ||
-    wilayah.includes('pengasuh') ||
-    wilayah.includes('dzurriyah') ||
-    daerah.includes('kasepuhan')
-  );
-};
 
 export const PackageValidationView: React.FC<PackageValidationViewProps> = ({
   currentUser,

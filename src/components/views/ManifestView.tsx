@@ -20,43 +20,15 @@ import {
 import { packagesApi } from '../../lib/api';
 import { PackageItem, Operator } from '../../types';
 import { useToast } from '../Toast';
+import { isKeluargaPengasuh } from '../../lib/package-helpers';
+import { DAFTAR_NAMA_WILAYAH } from '../../lib/pesantren-constants';
 
 interface ManifestViewProps {
   currentUser?: Operator | null;
   onOpenLabelPrint?: (pkg: PackageItem) => void;
 }
 
-// Helper to identify packages intended for pesantren caregiver family (Keluarga Pengasuh)
-const isKeluargaPengasuh = (pkg: PackageItem | null): boolean => {
-  if (!pkg) return false;
-  const name = (pkg.recipientName || '').toLowerCase();
-  const id = (pkg.recipientId || '').toUpperCase();
-  const wilayah = (pkg.wilayah || '').toLowerCase();
-  const daerah = (pkg.daerah || '').toLowerCase();
-  return (
-    id === 'PENGASUH' ||
-    name.includes('pengasuh') ||
-    name.includes('dzurriyah') ||
-    name.includes('[keluarga pengasuh]') ||
-    wilayah.includes('pengasuh') ||
-    wilayah.includes('dzurriyah') ||
-    daerah.includes('kasepuhan')
-  );
-};
-
-const WILAYAH_LIST = [
-  'Wilayah Syekh Jumadil Kubro (01)',
-  'Wilayah Az-Zainiyah (02)',
-  'Wilayah Al-Hasyimiyah (03)',
-  'Wilayah Nasyiatul Hamidiyah (04)',
-  "Wilayah Fatimatuzzahro' (05)",
-  'Wilayah Jalaluddin Ar-Rumi (06)',
-  'Wilayah Al-Mawaddah (07)',
-  'Wilayah Al-Amiri (08)',
-  'Wilayah Al-Lathifiyah (09)',
-  'Wilayah Zaid bin Tsabit Putra (10)',
-  'Wilayah Zaid bin Tsabit Putri (11)',
-];
+const WILAYAH_LIST = DAFTAR_NAMA_WILAYAH;
 
 export const ManifestView: React.FC<ManifestViewProps> = ({
   currentUser,
