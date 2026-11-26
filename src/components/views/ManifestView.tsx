@@ -17,7 +17,7 @@ import {
   Camera,
   Crown,
 } from 'lucide-react';
-import { packagesApi } from '../../lib/api';
+import { packagesApi, wilayahApi } from '../../lib/api';
 import { PackageItem, Operator } from '../../types';
 import { useToast } from '../Toast';
 
@@ -44,25 +44,13 @@ const isKeluargaPengasuh = (pkg: PackageItem | null): boolean => {
   );
 };
 
-const WILAYAH_LIST = [
-  'Wilayah Syekh Jumadil Kubro (01)',
-  'Wilayah Az-Zainiyah (02)',
-  'Wilayah Al-Hasyimiyah (03)',
-  'Wilayah Nasyiatul Hamidiyah (04)',
-  "Wilayah Fatimatuzzahro' (05)",
-  'Wilayah Jalaluddin Ar-Rumi (06)',
-  'Wilayah Al-Mawaddah (07)',
-  'Wilayah Al-Amiri (08)',
-  'Wilayah Al-Lathifiyah (09)',
-  'Wilayah Zaid bin Tsabit Putra (10)',
-  'Wilayah Zaid bin Tsabit Putri (11)',
-];
 
 export const ManifestView: React.FC<ManifestViewProps> = ({
   currentUser,
   onOpenLabelPrint,
 }) => {
   const [packages, setPackages] = useState<PackageItem[]>([]);
+  const [wilayahList, setWilayahList] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -154,7 +142,11 @@ export const ManifestView: React.FC<ManifestViewProps> = ({
     }
   };
 
- useEffect(() => {
+  useEffect(() => {
+    wilayahApi.getNames().then(setWilayahList).catch(console.error);
+  }, []);
+
+  useEffect(() => {
     fetchPackages();
   }, [
     statusFilter,
@@ -511,7 +503,7 @@ export const ManifestView: React.FC<ManifestViewProps> = ({
           >
             <option value="all">Semua Wilayah</option>
 
-            {WILAYAH_LIST.map((wilayah) => (
+            {wilayahList.map((wilayah) => (
               <option key={wilayah} value={wilayah}>
                 {wilayah}
               </option>

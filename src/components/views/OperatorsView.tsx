@@ -20,24 +20,11 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { operatorsApi, studentsApi } from '../../lib/api';
+import { operatorsApi, studentsApi, wilayahApi } from '../../lib/api';
 import { Operator, Role, Student } from '../../types';
 import { useToast } from '../Toast';
 import { processAndCompressImage } from '../../lib/image-utils';
 
-const DAFTAR_WILAYAH = [
-  'Wilayah Syekh Jumadil Kubro (01)',
-  'Wilayah Jalaluddin Ar-Rumi (06)',
-  'Wilayah Al-Amiri (08)',
-  'Wilayah Zaid bin Tsabit Putra (10)',
-  'Wilayah Az-Zainiyah (02)',
-  'Wilayah Al-Hasyimiyah (03)',
-  "Wilayah Fatimatuzzahro' (05)",
-  'Wilayah Al-Mawaddah (07)',
-  'Wilayah Al-Lathifiyah (09)',
-  'Wilayah Zaid bin Tsabit Putri (11)',
-  'Wilayah Nasyiatul Hamidiyah (04)',
-];
 
 interface OperatorsViewProps {
   currentUser?: Operator | null;
@@ -50,6 +37,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
 }) => {
   const [operators, setOperators] = useState<Operator[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [daftarWilayah, setDaftarWilayah] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Create Modal State
@@ -103,6 +91,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
   useEffect(() => {
     fetchOperators();
     fetchStudents();
+    wilayahApi.getNames().then(setDaftarWilayah).catch(console.error);
   }, []);
 
   // Filter students for registration search
@@ -787,7 +776,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                     >
                       <option value="">Pilih Wilayah Keamanan</option>
 
-                      {DAFTAR_WILAYAH.map((wilayah) => (
+                      {daftarWilayah.map((wilayah) => (
                         <option key={wilayah} value={wilayah}>
                           {wilayah}
                         </option>
@@ -971,7 +960,7 @@ export const OperatorsView: React.FC<OperatorsViewProps> = ({
                       >
                         <option value="">Pilih Wilayah Keamanan</option>
 
-                        {DAFTAR_WILAYAH.map((wilayah) => (
+                        {daftarWilayah.map((wilayah) => (
                           <option key={wilayah} value={wilayah}>
                             {wilayah}
                           </option>

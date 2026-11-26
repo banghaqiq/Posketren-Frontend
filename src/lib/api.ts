@@ -199,4 +199,21 @@ export const printerApi = {
   },
 };
 
+export interface WilayahItem {
+  label: string;
+  value: string;
+  daerah: string[];
+}
+
+export const wilayahApi = {
+  getAll: async () => {
+    const res = await api.get<WilayahItem[]>('/wilayah');
+    return res.data;
+  },
+  getNames: async () => {
+    const res = await api.get<string[]>('/wilayah/names');
+    return res.data;
+  },
+};
+
 export default api;
